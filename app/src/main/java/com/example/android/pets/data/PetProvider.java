@@ -45,6 +45,15 @@ public class PetProvider extends ContentProvider {
     /** Tag for the log messages */
     public static final String LOG_TAG = PetProvider.class.getSimpleName();
 
+
+
+
+
+
+
+
+
+
     /**
      * Initialize the provider and the database helper object.
      */
@@ -55,6 +64,14 @@ public class PetProvider extends ContentProvider {
 
         return true;
     }
+
+
+
+
+
+
+
+
 
     /**
      * Perform the query for the given URI. Use the given projection, selection, selection arguments, and sort order.
@@ -98,8 +115,18 @@ public class PetProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
+
+        cursor.setNotificationUri(getContext().getContentResolver(),uri);
         return cursor;
     }
+
+
+
+
+
+
+
+
 
     /**
      * Insert new data into the provider with the given ContentValues.
@@ -143,10 +170,25 @@ public class PetProvider extends ContentProvider {
             Log.e(LOG_TAG,"Failed to insert row for "+uri);
             return null;
         }
+
+
+        getContext().getContentResolver().notifyChange(uri, null);
         // Once we know the ID of the new row in the table,
         // return the new URI with the ID appended to the end of it
         return ContentUris.withAppendedId(uri, id);
     }
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Updates the data at the given selection and selection arguments, with the new ContentValues.
      */
@@ -208,8 +250,26 @@ public class PetProvider extends ContentProvider {
 
         SQLiteDatabase db=mDbHelper.getWritableDatabase();
         int rows=db.update(PetEntry.TABLE_NAME,values,selection,selectionArgs);
+
+        // If 1 or more rows were updated, then notify all listeners that the data at the
+        // given URI has changed
+        if (rows != 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
         return rows;
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Delete the data at the given selection and selection arguments.
@@ -220,19 +280,42 @@ public class PetProvider extends ContentProvider {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         final int match = sUriMatcher.match(uri);
+        int rowDeleted;
         switch (match) {
             case PETS:
                 // Delete all rows that match the selection and selection args
-                return db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                rowDeleted=db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
             case PET_ID:
                 // Delete a single row given by the ID in the URI
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
-                return db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                rowDeleted=db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
             default:
                 throw new IllegalArgumentException("Deletion is not supported for " + uri);
         }
+        // If 1 or more rows were deleted, then notify all listeners that the data at the
+        // given URI has changed
+        if (rowDeleted != 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+        return rowDeleted;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Returns the MIME type of data for the content URI.
