@@ -106,9 +106,9 @@
             <!-- Weight field -->
             <EditText
                 android:id="@+id/edit_pet_weight"
+                style="@style/EditorFieldStyle"
                 android:hint="@string/hint_pet_weight"
-                android:inputType="number"
-                style="@style/EditorFieldStyle" />
+                android:inputType="number" />
 
             <!-- Units for weight (kg) -->
             <TextView

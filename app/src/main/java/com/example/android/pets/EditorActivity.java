@@ -80,7 +80,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     // OnTouchListener that listens for any user touches on a View, implying that they are modifying
 // the view, and we change the mPetHasChanged boolean to true.
-    private View.OnTouchListener mTouchListener;
+    private final View.OnTouchListener mTouchListener;
     {
         mTouchListener = (v, event) -> {
             mPetHasChanged = true;
@@ -313,12 +313,27 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
      * Perform the deletion of the pet in the database.
      */
     private void deletePet() {
-        if(mCurrentPetUri!=null){
-            getContentResolver().delete(mCurrentPetUri,null,null);
-            Toast.makeText(this, getString(R.string.editor_delete_pet_successful),
-                    Toast.LENGTH_SHORT).show();
+        // Only perform the delete if this is an existing pet.
+        if (mCurrentPetUri != null) {
+            // Call the ContentResolver to delete the pet at the given content URI.
+            // Pass in null for the selection and selection args because the mCurrentPetUri
+            // content URI already identifies the pet that we want.
+            int rowsDeleted = getContentResolver().delete(mCurrentPetUri, null, null);
+
+            // Show a toast message depending on whether or not the delete was successful.
+            if (rowsDeleted == 0) {
+                // If no rows were deleted, then there was an error with the delete.
+                Toast.makeText(this, getString(R.string.editor_delete_pet_failed),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                // Otherwise, the delete was successful and we can display a toast.
+                Toast.makeText(this, getString(R.string.editor_delete_pet_successful),
+                        Toast.LENGTH_SHORT).show();
+            }
         }
 
+        // Close the activity
+        finish();
     }
 
 
@@ -344,13 +359,12 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        super.onPrepareOptionsMenu(menu);
         // If this is a new pet, hide the "Delete" menu item.
         if (mCurrentPetUri == null) {
             MenuItem menuItem = menu.findItem(R.id.action_delete);
             menuItem.setVisible(false);
         }
-        return true;
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -371,24 +385,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 return true;
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
-                // If the pet hasn't changed, continue with navigating up to parent activity
-                // which is the {@link CatalogActivity}.
-                if (!mPetHasChanged) {
-                    NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                    return true;
-                }
-
-                // Otherwise if there are unsaved changes, setup a dialog to warn the user.
-                // Create a click listener to handle the user confirming that
-                // changes should be discarded.
-                DialogInterface.OnClickListener discardButtonClickListener =
-                        (dialogInterface, i) -> {
-                            // User clicked "Discard" button, navigate to parent activity.
-                            NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                        };
-
-                // Show a dialog that notifies the user they have unsaved changes
-                showUnsavedChangesDialog(discardButtonClickListener);
+                onBackPressed();
                 return true;
         }
         return super.onOptionsItemSelected(item);
